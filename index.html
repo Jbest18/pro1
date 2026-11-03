@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Word Quest - เกมคำศัพท์ ม.1</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            purple: '#6C5CE7',
+                            pink: '#FD79A8',
+                            yellow: '#FDCB6E',
+                            green: '#00B894',
+                            blue: '#0984E3',
+                            bg: '#F0F3FF'
+                        }
+                    },
+                    fontFamily: {
+                        fredoka: ['Fredoka', 'sans-serif'],
+                        kanit: ['Kanit', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Kanit', 'Fredoka', sans-serif;
+            background-color: #F0F3FF;
+            background-image: radial-gradient(#6C5CE7 0.75px, transparent 0.75px), radial-gradient(#6C5CE7 0.75px, #F0F3FF 0.75px);
+            background-size: 30px 30px;
+            background-position: 0 0, 15px 15px;
+        }
+
+        .font-en {
+            font-family: 'Fredoka', cursive, sans-serif;
+        }
+
+        .letter-input {
+            width: 3.2rem;
+            height: 3.8rem;
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 1.8rem;
+            font-weight: bold;
+            border-bottom: 4px solid #6C5CE7;
+            transition: all 0.2s ease;
+        }
+        
+        @media (max-width: 640px) {
+            .letter-input {
+                width: 2.3rem;
+                height: 3rem;
+                font-size: 1.3rem;
+            }
+        }
+
+        .letter-input:focus {
+            outline: none;
+            border-bottom-color: #FD79A8;
+            transform: translateY(-4px);
+        }
+
+        .pulse-timer {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.08); opacity: 0.8; }
+        }
+
+        .btn-bounce:hover {
+            transform: translateY(-3px) scale(1.02);
+        }
+        .btn-bounce:active {
+            transform: translateY(1px) scale(0.98);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 25px -5px rgba(108, 92, 231, 0.15), 0 10px 10px -5px rgba(108, 92, 231, 0.04);
+        }
+
+        .correct-shake {
+            animation: correctAnim 0.5s ease-in-out;
+        }
+
+        @keyframes correctAnim {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .wrong-shake {
+            animation: wrongAnim 0.4s ease-in-out;
+        }
+
+        @keyframes wrongAnim {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-3 sm:p-6 text-gray-800 select-none">
+
+    <div id="app" class="w-full max-w-2xl">
+        <!-- Header Controls -->
+        <header class="flex justify-between items-center mb-4 px-2">
+            <div class="flex items-center space-x-2">
+                <span class="bg-brand-purple text-white p-2 rounded-xl text-lg font-bold shadow-md">
+                    <i class="fa-solid fa-gamepad mr-1"></i> M.1
+                </span>
+                <span class="text-brand-purple font-bold text-lg font-en tracking-wide hidden sm:inline">English Word Quest</span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button id="soundToggle" onclick="toggleSound()" class="bg-white hover:bg-gray-100 text-brand-purple p-2.5 rounded-xl shadow-md transition-all">
+                    <i class="fa-solid fa-volume-high text-xl" id="soundIcon"></i>
+                </button>
+                <div class="bg-white px-3 py-1.5 rounded-xl shadow-md border-2 border-brand-yellow font-bold text-gray-700 flex items-center">
+                    <i class="fa-solid fa-trophy text-brand-yellow text-xl mr-2"></i>
+                    <span id="highScoreDisplay">High: 0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 1. START SCREEN -->
+        <main id="startScreen" class="glass-card rounded-3xl p-6 sm:p-10 text-center border-4 border-brand-purple/20 relative overflow-hidden">
+            <div class="absolute -top-12 -right-12 w-32 h-32 bg-brand-yellow/30 rounded-full blur-xl"></div>
+            <div class="absolute -bottom-12 -left-12 w-32 h-32 bg-brand-pink/30 rounded-full blur-xl"></div>
+
+            <div class="inline-block bg-brand-purple/10 p-4 rounded-full text-brand-purple mb-4">
+                <i class="fa-solid fa-graduation-cap text-5xl"></i>
+            </div>
+            
+            <h1 class="text-3xl sm:text-5xl font-extrabold text-brand-purple font-en mb-2 tracking-wide">English Word Quest</h1>
+            <p class="text-lg text-gray-600 mb-6">เกมทายคำศัพท์ภาษาอังกฤษสุดสนุก สำหรับนักเรียน ม.1</p>
+
+            <div class="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 mb-6 text-left max-w-md mx-auto">
+                <h2 class="font-bold text-blue-900 mb-2 flex items-center">
+                    <i class="fa-solid fa-circle-info mr-2"></i> กติกาการเล่น:
+                </h2>
+                <ul class="text-sm text-blue-800 space-y-1.5 list-disc list-inside">
+                    <li>เติมตัวอักษรที่หายไปให้ถูกต้อง</li>
+                    <li>มีเวลาข้อละ <b>20 วินาที</b></li>
+                    <li>ตอบถูกรับไปเลย <b>1 คะแนน</b> ต่อข้อ</li>
+                    <li>คำตอบที่ถูกต้องจะมีคำอ่านและประโยคตัวอย่างให้เรียนรู้เพิ่มเติม</li>
+                </ul>
+            </div>
+
+            <!-- Category Selector -->
+            <div class="mb-6 max-w-md mx-auto">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">เลือกหมวดหมู่คำศัพท์:</label>
+                <select id="categorySelect" class="w-full bg-white border-2 border-brand-purple/30 rounded-xl px-4 py-2.5 font-bold text-brand-purple focus:outline-none focus:border-brand-purple shadow-sm">
+                    <option value="all">🌟 ทุกหมวดหมู่ (All Categories)</option>
+                    <option value="school">🏫 ชีวิตในโรงเรียน (School & Learning)</option>
+                    <option value="environment">🌿 ธรรมชาติและสิ่งแวดล้อม (Environment)</option>
+                    <option value="technology">💻 เทคโนโลยีและสื่อสาร (Technology)</option>
+                    <option value="routine">⏰ กิจวัตรและงานอดิเรก (Routine & Hobbies)</option>
+                </select>
+            </div>
+
+            <button onclick="startGame()" class="btn-bounce bg-brand-green hover:bg-emerald-500 text-white font-bold text-xl px-10 py-4 rounded-2xl shadow-lg shadow-emerald-200 transition-all w-full sm:w-auto">
+                <i class="fa-solid fa-play mr-2"></i> เริ่มเล่นเกมเลย!
+            </button>
+        </main>
+
+        <!-- 2. GAME SCREEN -->
+        <main id="gameScreen" class="hidden glass-card rounded-3xl p-5 sm:p-8 border-4 border-brand-purple/20">
+            <!-- Game Top Status Bar -->
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center space-x-2">
+                    <span class="bg-brand-purple/10 text-brand-purple font-bold px-3 py-1.5 rounded-xl text-sm">
+                        ข้อที่ <span id="currentQuestionNum">1</span>/<span id="totalQuestionsNum">10</span>
+                    </span>
+                    <span id="categoryBadge" class="bg-brand-pink/10 text-brand-pink font-bold px-3 py-1.5 rounded-xl text-xs sm:text-sm">
+                        Category
+                    </span>
+                </div>
+                <!-- Score Counter -->
+                <div class="flex items-center space-x-1 font-en font-bold text-xl text-brand-purple">
+                    <i class="fa-solid fa-star text-brand-yellow"></i>
+                    <span id="scoreDisplay">0</span>
+                </div>
+            </div>
+
+            <!-- Timer Bar -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-1 text-sm font-bold">
+                    <span class="text-gray-500"><i class="fa-regular fa-clock mr-1"></i> เวลาเหลือ</span>
+                    <span id="timerText" class="text-brand-purple font-en text-lg">20s</span>
+                </div>
+                <div class="w-full bg-gray-200 h-3 rounded-full overflow-hidden p-0.5">
+                    <div id="progressBar" class="bg-brand-purple h-full rounded-full transition-all duration-1000 ease-linear" style="width: 100%;"></div>
+                </div>
+            </div>
+
+            <!-- Main Question Area -->
+            <div id="questionContainer" class="text-center my-6">
+                <!-- Hint / Thai Meaning -->
+                <div class="inline-block bg-yellow-50 border border-yellow-200 rounded-2xl px-5 py-2.5 mb-6 text-yellow-900 shadow-sm">
+                    <span class="text-xs text-yellow-600 block font-semibold mb-0.5">คำใบ้ / ความหมาย:</span>
+                    <span id="wordHint" class="text-xl sm:text-2xl font-bold">...</span>
+                    <span id="partOfSpeech" class="text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-md ml-2 font-normal font-en">noun</span>
+                </div>
+
+                <!-- Missing Letters Display / Input Controls -->
+                <div id="wordDisplay" class="flex justify-center items-center gap-1.5 sm:gap-2 mb-6 flex-wrap font-en">
+                    <!-- Dynamic Letter Inputs Inserted via JS -->
+                </div>
+
+                <!-- Submit Button -->
+                <div class="flex justify-center gap-3">
+                    <button id="submitBtn" onclick="checkAnswer()" class="btn-bounce bg-brand-purple hover:bg-indigo-600 text-white font-bold text-lg px-8 py-3 rounded-xl shadow-md transition-all">
+                        <i class="fa-solid fa-paper-plane mr-2"></i> ส่งคำตอบ
+                    </button>
+                    <button id="nextBtn" onclick="nextQuestion()" class="hidden btn-bounce bg-brand-blue hover:bg-blue-600 text-white font-bold text-lg px-8 py-3 rounded-xl shadow-md transition-all">
+                        ข้อถัดไป <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Result Feedback Card (Shows Pronunciation & Example Sentence) -->
+            <div id="resultFeedback" class="hidden mt-6 p-4 rounded-2xl border-2 transition-all">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span id="feedbackStatus" class="font-bold text-lg"></span>
+                            <span id="phoneticText" class="font-en text-sm text-gray-500">/phonetic/</span>
+                            <button onclick="speakWord()" class="text-brand-purple hover:text-indigo-700 bg-purple-100 p-2 rounded-full transition-all" title="ฟังเสียงอ่าน">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                        </div>
+                        <p id="fullWordDisplay" class="text-2xl font-bold font-en text-gray-800 my-1"></p>
+                        <p id="exampleSentence" class="text-sm text-gray-600 italic bg-white/70 p-2.5 rounded-xl border border-gray-100 mt-2 font-en">
+                            "Example sentence goes here."
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 3. END SUMMARY SCREEN -->
+        <main id="endScreen" class="hidden glass-card rounded-3xl p-6 sm:p-10 text-center border-4 border-brand-purple/20">
+            <div class="inline-block bg-yellow-100 p-4 rounded-full text-brand-yellow mb-4 shadow-inner">
+                <i class="fa-solid fa-trophy text-6xl"></i>
+            </div>
+
+            <h2 class="text-3xl font-extrabold text-gray-800 mb-1">จบเกมแล้ว! 🎉</h2>
+            <p class="text-gray-500 mb-6">เก่งมาก! มาดูสรุปคะแนนของคุณกัน</p>
+
+            <div class="bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-2xl p-6 mb-6 shadow-lg max-w-sm mx-auto">
+                <div class="text-sm font-semibold opacity-90 mb-1">คะแนนรวมที่ได้</div>
+                <div class="text-5xl font-extrabold font-en mb-2">
+                    <span id="finalScore">0</span> / <span id="finalTotal">10</span>
+                </div>
+                <div id="performanceBadge" class="inline-block bg-white/20 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm">
+                    ยอดเยี่ยมมาก! 🌟
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row justify-center gap-3 max-w-md mx-auto">
+                <button onclick="startGame()" class="btn-bounce bg-brand-green hover:bg-emerald-500 text-white font-bold text-lg px-6 py-3.5 rounded-xl shadow-md transition-all flex-1">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> เล่นอีกครั้ง
+                </button>
+                <button onclick="showStartScreen()" class="btn-bounce bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-lg px-6 py-3.5 rounded-xl transition-all flex-1">
+                    <i class="fa-solid fa-house mr-2"></i> หน้าหลัก
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // M.1 Vocabulary Database (Grade 7 Level)
+        const vocabularyDB = [
+            // School & Learning
+            { word: "SUBJECT", missingIdx: [1, 4], hint: "วิชาเรียน", category: "school", pos: "n.", phonetic: "/ˈsʌb.dʒekt/", example: "English is my favorite subject." },
+            { word: "LIBRARY", missingIdx: [2, 5], hint: "ห้องสมุด", category: "school", pos: "n.", phonetic: "/ˈlaɪ.brər.i/", example: "We study quietly in the school library." },
+            { word: "SCIENCE", missingIdx: [1, 4], hint: "วิทยาศาสตร์", category: "school", pos: "n.", phonetic: "/ˈsaɪ.əns/", example: "We do experiments in science class." },
+            { word: "UNIFORM", missingIdx: [1, 5], hint: "เครื่องแบบ / ชุดนักเรียน", category: "school", pos: "n.", phonetic: "/ˈjuː.nə.fɔːm/", example: "Students wear a school uniform every day." },
+            { word: "PROJECT", missingIdx: [2, 4], hint: "โครงงาน / โปรเจกต์", category: "school", pos: "n.", phonetic: "/ˈprɒdʒ.ekt/", example: "We are working on a group project." },
+
+            // Environment
+            { word: "PROTECT", missingIdx: [1, 4], hint: "ปกป้อง / คุ้มครอง", category: "environment", pos: "v.", phonetic: "/prəˈtekt/", example: "We should protect our environment." },
+            { word: "RECYCLE", missingIdx: [2, 4], hint: "นำกลับมาใช้ใหม่", category: "environment", pos: "v.", phonetic: "/ˌriːˈsaɪ.kəl/", example: "Please recycle plastic bottles." },
+            { word: "CLIMATE", missingIdx: [1, 4], hint: "ภูมิอากาศ", category: "environment", pos: "n.", phonetic: "/ˈklaɪ.mət/", example: "Climate change affects the whole world." },
+            { word: "NATURAL", missingIdx: [2, 5], hint: "ตามธรรมชาติ", category: "environment", pos: "adj.", phonetic: "/ˈnætʃ.ər.əl/", example: "Trees are a natural resource." },
+            { word: "PLASTIC", missingIdx: [1, 4], hint: "พลาสติก", category: "environment", pos: "n.", phonetic: "/ˈplæs.tɪk/", example: "Try to reduce using plastic bags." },
+
+            // Technology
+            { word: "INTERNET", missingIdx: [2, 5], hint: "อินเทอร์เน็ต", category: "technology", pos: "n.", phonetic: "/ˈɪn.tə.net/", example: "I search for information on the internet." },
+            { word: "COMPUTER", missingIdx: [1, 4, 6], hint: "คอมพิวเตอร์", category: "technology", pos: "n.", phonetic: "/kəmˈpjuː.tər/", example: "She plays games on her computer." },
+            { word: "KEYBOARD", missingIdx: [2, 5], hint: "คีย์บอร์ด / แป้นพิมพ์", category: "technology", pos: "n.", phonetic: "/ˈkiː.bɔːd/", example: "He types quickly on the keyboard." },
+            { word: "MESSAGE", missingIdx: [1, 4], hint: "ข้อความ", category: "technology", pos: "n.", phonetic: "/ˈmes.ɪdʒ/", example: "Send me a message when you arrive." },
+            { word: "WEBSITE", missingIdx: [1, 4], hint: "เว็บไซต์", category: "technology", pos: "n.", phonetic: "/ˈweb.saɪt/", example: "This website helps students learn English." },
+
+            // Routine & Hobbies
+            { word: "EXERCISE", missingIdx: [2, 5], hint: "ออกกำลังกาย", category: "routine", pos: "v./n.", phonetic: "/ˈek.sə.saɪz/", example: "Regular exercise makes you healthy." },
+            { word: "ACTIVITY", missingIdx: [1, 4, 6], hint: "กิจกรรม", category: "routine", pos: "n.", phonetic: "/ækˈtɪv.ə.ti/", example: "Swimming is my favorite outdoor activity." },
+            { word: "BREAKFAST", missingIdx: [2, 5], hint: "อาหารเช้า", category: "routine", pos: "n.", phonetic: "/ˈbrek.fəst/", example: "Never skip breakfast before going to school." },
+            { word: "SCHEDULE", missingIdx: [2, 5], hint: "ตารางเวลา", category: "routine", pos: "n.", phonetic: "/ˈʃedʒ.uːl/", example: "Check your class schedule for tomorrow." },
+            { word: "FOOTBALL", missingIdx: [1, 4], hint: "ฟุตบอล", category: "routine", pos: "n.", phonetic: "/ˈfʊt.bɔːl/", example: "They play football after school." }
+        ];
+
+        // Game State Variables
+        let questions = [];
+        let currentQIndex = 0;
+        let score = 0;
+        let timer = null;
+        let timeLeft = 20;
+        let soundEnabled = true;
+        let highScore = localStorage.getItem('m1_vocab_highscore') || 0;
+
+        // Web Audio API Synth for SFX
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSFX(type) {
+            if (!soundEnabled) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.4);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(140, audioCtx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.35);
+                } else if (type === 'click') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.05);
+                }
+            } catch (e) {
+                console.log("Audio play error", e);
+            }
+        }
+
+        // Initialize App
+        document.getElementById('highScoreDisplay').innerText = `High: ${highScore}`;
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('soundIcon');
+            if (soundEnabled) {
+                icon.className = 'fa-solid fa-volume-high';
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-gray-400';
+            }
+        }
+
+        function showStartScreen() {
+            document.getElementById('startScreen').classList.remove('hidden');
+            document.getElementById('gameScreen').classList.add('hidden');
+            document.getElementById('endScreen').classList.add('hidden');
+            clearInterval(timer);
+        }
+
+        function startGame() {
+            playSFX('click');
+            const cat = document.getElementById('categorySelect').value;
+            
+            // Filter DB by Category
+            if (cat === 'all') {
+                questions = [...vocabularyDB];
+            } else {
+                questions = vocabularyDB.filter(item => item.category === cat);
+            }
+
+            // Shuffle questions
+            questions = questions.sort(() => 0.5 - Math.random()).slice(0, 10); // Pick up to 10 questions
+
+            currentQIndex = 0;
+            score = 0;
+
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('endScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('hidden');
+
+            document.getElementById('totalQuestionsNum').innerText = questions.length;
+            document.getElementById('scoreDisplay').innerText = score;
+
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const currentQ = questions[currentQIndex];
+
+            // Reset UI
+            document.getElementById('currentQuestionNum').innerText = currentQIndex + 1;
+            document.getElementById('wordHint').innerText = currentQ.hint;
+            document.getElementById('partOfSpeech').innerText = currentQ.pos;
+            document.getElementById('categoryBadge').innerText = getCategoryName(currentQ.category);
+            
+            document.getElementById('resultFeedback').classList.add('hidden');
+            document.getElementById('submitBtn').classList.remove('hidden');
+            document.getElementById('nextBtn').classList.add('hidden');
+
+            // Build letter inputs
+            const wordDisplay = document.getElementById('wordDisplay');
+            wordDisplay.innerHTML = '';
+
+            for (let i = 0; i < currentQ.word.length; i++) {
+                const char = currentQ.word[i];
+                if (currentQ.missingIdx.includes(i)) {
+                    // Create Input field for missing letters
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.maxLength = 1;
+                    input.className = 'letter-input rounded-xl text-brand-purple border-brand-purple bg-purple-50 focus:bg-white';
+                    input.dataset.index = i;
+                    input.dataset.answer = char;
+                    
+                    // Auto-focus next input field on typing
+                    input.addEventListener('input', (e) => {
+                        playSFX('click');
+                        if (e.target.value.length === 1) {
+                            const nextInput = input.nextElementSibling;
+                            if (nextInput && nextInput.tagName === 'INPUT') {
+                                nextInput.focus();
+                            }
+                        }
+                    });
+
+                    // Handle backspace navigation
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Backspace' && !input.value) {
+                            const prevInput = input.previousElementSibling;
+                            if (prevInput && prevInput.tagName === 'INPUT') {
+                                prevInput.focus();
+                            }
+                        } else if (e.key === 'Enter') {
+                            checkAnswer();
+                        }
+                    });
+
+                    wordDisplay.appendChild(input);
+                } else {
+                    // Static revealed letter
+                    const span = document.createElement('div');
+                    span.className = 'letter-input rounded-xl flex items-center justify-center font-bold text-gray-700 bg-gray-100 border-gray-300';
+                    span.innerText = char;
+                    wordDisplay.appendChild(span);
+                }
+            }
+
+            // Focus first input automatically
+            setTimeout(() => {
+                const firstInput = wordDisplay.querySelector('input');
+                if (firstInput) firstInput.focus();
+            }, 100);
+
+            startTimer();
+        }
+
+        function getCategoryName(cat) {
+            const map = {
+                school: '🏫 School',
+                environment: '🌿 Environment',
+                technology: '💻 Technology',
+                routine: '⏰ Routine'
+            };
+            return map[cat] || '🌟 General';
+        }
+
+        function startTimer() {
+            clearInterval(timer);
+            timeLeft = 20;
+            updateTimerUI();
+
+            timer = setInterval(() => {
+                timeLeft--;
+                updateTimerUI();
+
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    timeOutAnswer();
+                }
+            }, 1000);
+        }
+
+        function updateTimerUI() {
+            const timerText = document.getElementById('timerText');
+            const progressBar = document.getElementById('progressBar');
+            timerText.innerText = `${timeLeft}s`;
+
+            const percentage = (timeLeft / 20) * 100;
+            progressBar.style.width = `${percentage}%`;
+
+            if (timeLeft <= 5) {
+                progressBar.className = 'bg-red-500 h-full rounded-full transition-all duration-1000 ease-linear';
+                timerText.className = 'text-red-500 font-en text-lg font-bold pulse-timer';
+            } else {
+                progressBar.className = 'bg-brand-purple h-full rounded-full transition-all duration-1000 ease-linear';
+                timerText.className = 'text-brand-purple font-en text-lg';
+            }
+        }
+
+        function checkAnswer() {
+            clearInterval(timer);
+            const currentQ = questions[currentQIndex];
+            const inputs = document.querySelectorAll('#wordDisplay input');
+            let isCorrect = true;
+
+            inputs.forEach(input => {
+                const userVal = input.value.trim().toUpperCase();
+                const correctVal = input.dataset.answer;
+                if (userVal !== correctVal) {
+                    isCorrect = false;
+                }
+            });
+
+            showFeedback(isCorrect);
+        }
+
+        function timeOutAnswer() {
+            showFeedback(false, true);
+        }
+
+        function showFeedback(isCorrect, isTimeout = false) {
+            const currentQ = questions[currentQIndex];
+            const feedbackCard = document.getElementById('resultFeedback');
+            const feedbackStatus = document.getElementById('feedbackStatus');
+            const fullWordDisplay = document.getElementById('fullWordDisplay');
+            const phoneticText = document.getElementById('phoneticText');
+            const exampleSentence = document.getElementById('exampleSentence');
+
+            document.getElementById('submitBtn').classList.add('hidden');
+            document.getElementById('nextBtn').classList.remove('hidden');
+
+            feedbackCard.classList.remove('hidden');
+
+            // Fill all inputs with full correct word
+            const inputs = document.querySelectorAll('#wordDisplay input');
+            inputs.forEach(input => {
+                input.value = input.dataset.answer;
+                input.disabled = true;
+                if (isCorrect) {
+                    input.classList.add('bg-green-100', 'text-green-600', 'border-green-500');
+                } else {
+                    input.classList.add('bg-red-100', 'text-red-600', 'border-red-500');
+                }
+            });
+
+            fullWordDisplay.innerText = currentQ.word;
+            phoneticText.innerText = currentQ.phonetic;
+            exampleSentence.innerText = `"${currentQ.example}"`;
+
+            if (isCorrect) {
+                playSFX('correct');
+                score++;
+                document.getElementById('scoreDisplay').innerText = score;
+                
+                feedbackCard.className = 'mt-6 p-4 rounded-2xl border-2 bg-emerald-50 border-emerald-200 text-emerald-900 correct-shake';
+                feedbackStatus.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i> ถูกต้อง! (+1 คะแนน)`;
+
+                // Trigger confetti on correct answer
+                confetti({
+                    particleCount: 50,
+                    spread: 60,
+                    origin: { y: 0.7 }
+                });
+
+                // Auto speak English word
+                speakWord();
+
+            } else {
+                playSFX('wrong');
+                feedbackCard.className = 'mt-6 p-4 rounded-2xl border-2 bg-rose-50 border-rose-200 text-rose-900 wrong-shake';
+                if (isTimeout) {
+                    feedbackStatus.innerHTML = `<i class="fa-solid fa-clock text-rose-500 mr-1"></i> หมดเวลา! คำที่ถูกต้องคือ:`;
+                } else {
+                    feedbackStatus.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-500 mr-1"></i> ยังไม่ถูกต้อง! คำที่ถูกต้องคือ:`;
+                }
+            }
+        }
+
+        function speakWord() {
+            if ('speechSynthesis' in window) {
+                const currentQ = questions[currentQIndex];
+                const utterance = new SpeechSynthesisUtterance(currentQ.word);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9; // Slightly slower for clear learning
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function nextQuestion() {
+            playSFX('click');
+            currentQIndex++;
+            if (currentQIndex < questions.length) {
+                loadQuestion();
+            } else {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            clearInterval(timer);
+            document.getElementById('gameScreen').classList.add('hidden');
+            document.getElementById('endScreen').classList.remove('hidden');
+
+            document.getElementById('finalScore').innerText = score;
+            document.getElementById('finalTotal').innerText = questions.length;
+
+            const badge = document.getElementById('performanceBadge');
+            const ratio = score / questions.length;
+
+            if (ratio === 1) {
+                badge.innerText = "สมบูรณ์แบบ! ไร้ที่ติ 🌟🏆";
+                confetti({ particleCount: 120, spread: 100, origin: { y: 0.5 } });
+            } else if (ratio >= 0.7) {
+                badge.innerText = "เก่งมาก! ทำผลงานได้ยอดเยี่ยม 👍✨";
+            } else if (ratio >= 0.5) {
+                badge.innerText = "ดีแล้ว! พยายามฝึกฝนต่อไปนะ 💪";
+            } else {
+                badge.innerText = "ไม่เป็นไรนะ มาลองใหม่อีกครั้งกันเลย! ✌️";
+            }
+
+            // Save High Score
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('m1_vocab_highscore', highScore);
+                document.getElementById('highScoreDisplay').innerText = `High: ${highScore}`;
+            }
+        }
+    </script>
+</body>
+</html>
